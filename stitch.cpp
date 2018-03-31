@@ -6,6 +6,8 @@
 #include "opencv2/imgproc.hpp"
 #include "opencv2/imgcodecs.hpp"
 #include "opencv2/core/mat.hpp"
+#include "opencv2/xfeatures2d/nonfree.hpp"
+#include "opencv2/stitching/detail/matchers.hpp"
 
 
 double SCALE = 0.868757;  // TODO
@@ -44,6 +46,20 @@ void read_images(const std::vector<std::string> & image_names,
     }
 }
 
+void find_feature_points(const std::vector<cv::Mat>                   & images,
+                               std::vector<cv::detail::ImageFeatures> & features,
+                               std::string                              method="SIFT")
+{
+    if (method == "SIFT") {
+        // TODO
+    }
+    else if (method == "SURF") {
+        auto finder = cv::detail::SurfFeaturesFinder();
+        finder(images, features);
+        finder.collectGarbage();
+    }
+}
+
 
 int main(int argc, char * argv[])
 {
@@ -54,4 +70,7 @@ int main(int argc, char * argv[])
     std::vector<cv::Mat>  images;
     std::vector<cv::Size> image_sizes;
     read_images(img_names, images, image_sizes);
+
+    auto features = std::vector<cv::detail::ImageFeatures>(num_of_images);
+    find_feature_points(images, features, "SIFT");
 }
