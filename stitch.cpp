@@ -8,7 +8,8 @@
 #include "opencv2/core/mat.hpp"
 
 
-double SCALE = 1.0;
+double SCALE = 0.868757;  // TODO
+//double SCALE = 1.0;
 
 
 std::vector<std::string> parse_args(int argc, char * argv[])
