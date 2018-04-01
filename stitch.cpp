@@ -3,6 +3,7 @@
 #include <string>
 #include <vector>
 
+#include "opencv2/opencv.hpp"
 #include "opencv2/imgproc.hpp"
 #include "opencv2/imgcodecs.hpp"
 #include "opencv2/core/mat.hpp"
@@ -64,6 +65,85 @@ void find_feature_points(const std::vector<cv::Mat>                   & images,
     }
 }
 
+void match_features(const cv::detail::ImageFeatures & features1,
+                    const cv::detail::ImageFeatures & features2,
+                          cv::detail::MatchesInfo   & matches_info)
+{
+    auto matcher = cv::FlannBasedMatcher();
+
+    std::vector<std::vector<cv::DMatch>> matches;
+    matcher.knnMatch(features1.descriptors, features2.descriptors, matches, 2);
+
+    for (const auto & m : matches) {
+        if (m.size() < 2) continue;
+        if (m[0].distance < 0.75f * m[1].distance) {
+            matches_info.matches.push_back(m[0]);
+        }
+    }
+}
+
+void get_homography(const cv::detail::ImageFeatures & features1,
+                    const cv::detail::ImageFeatures & features2,
+                          cv::detail::MatchesInfo   & matches_info)
+{
+    const auto num_of_matches = static_cast<int>(matches_info.matches.size());
+    assert (num_of_matches > 6);
+
+    auto src_pts = cv::Mat(1, num_of_matches, CV_32FC2);
+    auto dst_pts = cv::Mat(1, num_of_matches, CV_32FC2);
+    for (int i = 0; i < num_of_matches; ++i) {
+        const auto & m = matches_info.matches[i];
+
+        auto p = features1.keypoints[m.queryIdx].pt;
+        p.x -= features1.img_size.width  * 0.5f;
+        p.y -= features1.img_size.height * 0.5f;
+        src_pts.at<cv::Point2f>(0, i) = p;
+
+        p = features2.keypoints[m.trainIdx].pt;
+        p.x -= features2.img_size.width  * 0.5f;
+        p.y -= features2.img_size.height * 0.5f;
+        dst_pts.at<cv::Point2f>(0, i) = p;
+    }
+
+    matches_info.H = cv::findHomography(src_pts, dst_pts, matches_info.inliers_mask, cv::RANSAC);
+
+    matches_info.num_inliers = 0;
+    for (auto inlier : matches_info.inliers_mask) {
+        if (inlier)
+            ++matches_info.num_inliers;
+    }
+
+    matches_info.confidence = matches_info.num_inliers / (8 + 0.3 * matches_info.matches.size());
+}
+
+void match_feature_points(const std::vector<cv::detail::ImageFeatures>            & features,
+                                std::vector<std::vector<cv::detail::MatchesInfo>> & matches_info)
+{
+    const auto num_of_images = static_cast<int>(features.size());
+    for (int i = 0; i < num_of_images - 1; ++i) {
+        for (int j = i + 1; j < num_of_images; ++j) {
+            match_features(features[i], features[j], matches_info[i][j]);
+            get_homography(features[i], features[j], matches_info[i][j]);
+            matches_info[i][j].src_img_idx = i;
+            matches_info[i][j].dst_img_idx = j;
+
+
+            matches_info[j][i] = matches_info[i][j];
+
+            const auto & H = matches_info[i][j].H;
+            if (not H.empty())
+                matches_info[j][i].H = H.inv();
+
+            std::swap(matches_info[j][i].src_img_idx,
+                      matches_info[j][i].dst_img_idx);
+
+            for (auto & m : matches_info[j][i].matches) {
+                std::swap(m.queryIdx, m.trainIdx);
+            }
+        }
+    }
+}
+
 
 int main(int argc, char * argv[])
 {
@@ -77,4 +157,9 @@ int main(int argc, char * argv[])
 
     auto features = std::vector<cv::detail::ImageFeatures>(num_of_images);
     find_feature_points(images, features, "SIFT");
+
+    auto matches_info = std::vector<std::vector<cv::detail::MatchesInfo>>(
+        num_of_images, std::vector<cv::detail::MatchesInfo>(num_of_images)
+    );
+    match_feature_points(features, matches_info);
 }
