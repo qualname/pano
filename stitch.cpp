@@ -51,7 +51,11 @@ void find_feature_points(const std::vector<cv::Mat>                   & images,
                                std::string                              method="SIFT")
 {
     if (method == "SIFT") {
-        // TODO
+        const auto num_of_images = static_cast<int>(images.size());
+        auto finder = cv::xfeatures2d::SIFT::create();
+        for (int i = 0; i < num_of_images; ++i) {
+            finder->detectAndCompute(images[i], cv::Mat(), features[i].keypoints, features[i].descriptors);
+        }
     }
     else if (method == "SURF") {
         auto finder = cv::detail::SurfFeaturesFinder();
