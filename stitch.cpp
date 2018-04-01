@@ -10,6 +10,7 @@
 #include "opencv2/xfeatures2d/nonfree.hpp"
 #include "opencv2/stitching/detail/matchers.hpp"
 
+#include "camera.hpp"
 
 double SCALE = 0.868757;  // TODO
 //double SCALE = 1.0;
@@ -162,4 +163,11 @@ int main(int argc, char * argv[])
         num_of_images, std::vector<cv::detail::MatchesInfo>(num_of_images)
     );
     match_feature_points(features, matches_info);
+
+    // TODO: image matching, find max spanning tree(s)
+    std::vector<std::pair<cv::detail::Graph, int>> trees;
+
+    auto cameras = std::vector<std::vector<cv::detail::CameraParams>>();
+    for (const auto & [tree, center] : trees)
+        cameras.push_back(camera_params::estimate(features, matches_info, tree, center));
 }
