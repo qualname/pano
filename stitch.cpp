@@ -51,17 +51,22 @@ void find_feature_points(const std::vector<cv::Mat>                   & images,
                                std::vector<cv::detail::ImageFeatures> & features,
                                std::string                              method="SIFT")
 {
+    const auto num_of_images = static_cast<int>(images.size());
     if (method == "SIFT") {
-        const auto num_of_images = static_cast<int>(images.size());
         auto finder = cv::xfeatures2d::SIFT::create();
         for (int i = 0; i < num_of_images; ++i) {
+            features[i].img_size = images[i].size();
+            features[i].img_idx = i;
             finder->detectAndCompute(images[i], cv::Mat(), features[i].keypoints, features[i].descriptors);
         }
     }
     else if (method == "SURF") {
-        auto finder = cv::detail::SurfFeaturesFinder();
-        finder(images, features);
-        finder.collectGarbage();
+        auto finder = cv::xfeatures2d::SURF::create(300., 3, 4);
+        for (int i = 0; i < num_of_images; ++i) {
+            features[i].img_size = images[i].size();
+            features[i].img_idx = i;
+            finder->detectAndCompute(images[i], cv::Mat(), features[i].keypoints, features[i].descriptors);
+        }
     }
 }
 
