@@ -92,7 +92,7 @@ void get_homography(const cv::detail::ImageFeatures & features1,
                           cv::detail::MatchesInfo   & matches_info)
 {
     const auto num_of_matches = static_cast<int>(matches_info.matches.size());
-    assert (num_of_matches > 6);
+    if (num_of_matches <= 6) return;
 
     auto src_pts = cv::Mat(1, num_of_matches, CV_32FC2);
     auto dst_pts = cv::Mat(1, num_of_matches, CV_32FC2);
