@@ -23,8 +23,8 @@ struct Estimate_Rotation {
     void operator()(const cv::detail::GraphEdge & edge) {
         auto K_0 = this->K(edge.from);
         auto K_1 = this->K(edge.to);
-        cv::Mat R_10 = K_0.inv() * matches_info[edge.from][edge.to].H.inv() * K_1;
-        cameras[edge.to].R = cameras[edge.from].R * R_10;
+        cv::Mat R_01 = K_0.inv() * matches_info[edge.to][edge.from].H * K_1;
+        cameras[edge.to].R = cameras[edge.from].R * R_01;
     }
 
     std::vector<cv::detail::CameraParams> & cameras;
