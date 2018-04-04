@@ -110,8 +110,10 @@ void get_homography(const cv::detail::ImageFeatures & features1,
         dst_pts.at<cv::Point2f>(0, i) = p;
     }
 
-    matches_info.H = cv::findHomography(src_pts, dst_pts, matches_info.inliers_mask, cv::RANSAC);
+    auto H = cv::findHomography(src_pts, dst_pts, matches_info.inliers_mask, cv::RANSAC);
+    if (std::abs(H.at<double>(2,0)) >= 0.002 or std::abs(H.at<double>(2,1)) >= 0.002)   return;
 
+    matches_info.H = H;
     matches_info.num_inliers = 0;
     for (auto inlier : matches_info.inliers_mask) {
         if (inlier)
