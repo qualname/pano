@@ -112,6 +112,11 @@ void get_homography(const cv::detail::ImageFeatures & features1,
 
     auto H = cv::findHomography(src_pts, dst_pts, matches_info.inliers_mask, cv::RANSAC);
     if (std::abs(H.at<double>(2,0)) >= 0.002 or std::abs(H.at<double>(2,1)) >= 0.002)   return;
+    // H shouldn't flip vertically, therefore:
+    // y coord of H*[0,0,1]^T  <=  y coord of H*[0,1,1]^T  must be true
+    if (H.at<double>(1,2) > (H.at<double>(1,1) + H.at<double>(1,2)))    return;
+    // same check, but horizontally
+    if (H.at<double>(0,2) > (H.at<double>(0,0) + H.at<double>(0,2)))    return;
 
     matches_info.H = H;
     matches_info.num_inliers = 0;
