@@ -105,6 +105,7 @@ estimate(const std::vector<cv::detail::ImageFeatures>            & features,
     for (int i = 0; i < num_of_images; ++i) {
         cameras[i].ppx += 0.5 * features[i].img_size.width;
         cameras[i].ppy += 0.5 * features[i].img_size.height;
+        cameras[i].R.convertTo(cameras[i].R, CV_32F);
     }
 
     return cameras;
