@@ -11,9 +11,10 @@
 #include "opencv2/stitching/detail/matchers.hpp"
 
 #include "camera.hpp"
+#include "utils.hpp"
 
-double SCALE = 0.868757;  // TODO
-//double SCALE = 1.0;
+//double SCALE = 0.868757;  // TODO
+double SCALE = 1.0;
 
 
 std::vector<std::string> parse_args(int argc, char * argv[])
@@ -164,7 +165,8 @@ int main(int argc, char * argv[])
     );
     match_feature_points(features, matches_info);
 
-    // TODO: image matching, find max spanning tree(s)
+    auto graph = utils::AdjacencyMatrix(matches_info, 1.0);
+
     std::vector<std::pair<cv::detail::Graph, int>> trees;
 
     auto cameras = std::vector<std::vector<cv::detail::CameraParams>>();
