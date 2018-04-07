@@ -27,11 +27,48 @@ public:
         }
     }
 
-    std::vector<std::set<int>> find_components();
+    std::vector<std::set<int>> find_components()
+    {
+        const auto num_of_vertices = static_cast<int>(adj_matrix.size());
+        std::set<int> vertices_seen;
+        std::vector<std::set<int>> components;
+        for (int i = 0; i < num_of_vertices; ++i) {
+            if (vertices_seen.find(i) != vertices_seen.end()) continue;
+
+            auto comp = bf_walk(i);
+            components.push_back(comp);
+            vertices_seen.merge(comp);
+        }
+
+        return components;
+    }
 
     std::pair<cv::detail::Graph, int> find_max_span_tree(const std::set<int> & vertices);
 
 private:
+
+    std::set<int> bf_walk(int start_idx)
+    {
+        const auto num_of_vertices = static_cast<int>(adj_matrix.size());
+        auto found = std::set<int>();
+        auto queue = std::queue<int>();
+
+        found.insert(start_idx);
+        queue.push(start_idx);
+
+        int vertex;
+        while (not queue.empty()) {
+            vertex = queue.front();
+            for (int v : this->adj(vertex)) {
+                auto [it, havent_found_yet] = found.insert(v);
+                if (havent_found_yet)
+                    queue.push(v);
+            }
+            queue.pop();
+        }
+
+        return found;
+    }
 
     std::vector<int> adj(int vertex)
     {

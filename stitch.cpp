@@ -166,8 +166,11 @@ int main(int argc, char * argv[])
     match_feature_points(features, matches_info);
 
     auto graph = utils::AdjacencyMatrix(matches_info, 1.0);
+    auto components = graph.find_components();
 
     std::vector<std::pair<cv::detail::Graph, int>> trees;
+    for (const auto & comp : components)
+        trees.push_back(graph.find_max_span_tree(comp));
 
     auto cameras = std::vector<std::vector<cv::detail::CameraParams>>();
     for (const auto & [tree, center] : trees)
