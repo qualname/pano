@@ -10,9 +10,11 @@
 #include "opencv2/xfeatures2d/nonfree.hpp"
 #include "opencv2/stitching/detail/matchers.hpp"
 
+#include "camera.hpp"
+#include "utils.hpp"
 
-double SCALE = 0.868757;  // TODO
-//double SCALE = 1.0;
+//double SCALE = 0.868757;  // TODO
+double SCALE = 1.0;
 
 
 std::vector<std::string> parse_args(int argc, char * argv[])
@@ -174,4 +176,16 @@ int main(int argc, char * argv[])
         num_of_images, std::vector<cv::detail::MatchesInfo>(num_of_images)
     );
     match_feature_points(features, matches_info);
+
+    auto graph = utils::AdjacencyMatrix(matches_info, 1.0);
+    auto components = graph.find_components();
+
+    std::vector<int> centers;
+    cv::detail::Graph spanning_tree(num_of_images);
+    for (const auto & comp : components)
+        centers.push_back(graph.find_max_span_tree(comp, spanning_tree));
+
+    auto cameras = std::vector<std::vector<cv::detail::CameraParams>>();
+    for (const auto center : centers)
+        cameras.push_back(camera_params::estimate(features, matches_info, spanning_tree, center));
 }
