@@ -62,8 +62,8 @@ public:
         return components;
     }
 
-    std::pair<cv::detail::Graph, int> find_max_span_tree(const std::set<int>     & vertices,
-                                                               cv::detail::Graph & span_tree)
+    int find_max_span_tree(const std::set<int>     & vertices,
+                                 cv::detail::Graph & span_tree)
     {
         const auto num_of_vertices = static_cast<int>(vertices.size());
 
@@ -105,7 +105,7 @@ public:
         auto max_dist = std::max_element(max_distances.cbegin(), max_distances.cend(), [](const auto & p1, const auto & p2) {
             return p1.second < p2.second; });
 
-        return std::make_pair(span_tree, max_dist->first);
+        return max_dist->first;
     }
 
 private:
