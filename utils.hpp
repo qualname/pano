@@ -1,7 +1,3 @@
-#include <iosfwd>
-#include <iomanip>
-#include <set>
-#include <queue>
 #include <vector>
 
 #include "opencv2/stitching/detail/matchers.hpp"
@@ -20,19 +16,11 @@ struct CmpWeightDesc {
 };
 
 
-struct Increment {
-    Increment(std::map<int, int> & distances_) : distances(distances_) {}
-    void operator()(const cv::detail::GraphEdge & edge) {
-        distances[edge.to] = distances[edge.from] + 1;
-    }
-
-    std::map<int, int> & distances;
-};
-
 class AdjacencyMatrix {
 public:
     AdjacencyMatrix(const std::vector<std::vector<cv::detail::MatchesInfo>> & matrix, double threshold)
-    : components(static_cast<int>(matrix.size()))
+    : _max_vertex_idx(static_cast<int>(matrix.size())),
+      _span_tree(_max_vertex_idx)
     {
         const auto num_of_vertices = static_cast<int>(matrix.size());
         adj_matrix.resize(num_of_vertices);
@@ -40,112 +28,42 @@ public:
             adj_matrix[i].resize(num_of_vertices);
             for (int j = 0; j < num_of_vertices; ++j) {
                 const auto conf = matrix[i][j].confidence;
-                if (conf> threshold) adj_matrix[i][j] = conf;
-                else                 adj_matrix[i][j] = 0.0;
+                if (conf > threshold) adj_matrix[i][j] = conf;
+                else                  adj_matrix[i][j] = 0.0;
             }
         }
     }
 
-    std::vector<std::set<int>> find_components()
+    void find_max_span_trees()
     {
-        const auto num_of_vertices = static_cast<int>(adj_matrix.size());
-        std::set<int> vertices_seen;
-        std::vector<std::set<int>> components;
-        for (int i = 0; i < num_of_vertices; ++i) {
-            if (vertices_seen.find(i) != vertices_seen.end()) continue;
-
-            auto comp = bf_walk(i);
-            components.push_back(comp);
-            vertices_seen.merge(comp);
-        }
-
-        return components;
-    }
-
-    int find_max_span_tree(const std::set<int>     & vertices,
-                                 cv::detail::Graph & span_tree)
-    {
-        const auto num_of_vertices = static_cast<int>(vertices.size());
+        auto set = UNION_WHERE(_max_vertex_idx);
 
         std::set<std::tuple<int, int, double>, CmpWeightDesc> edges;
-        for (const auto v1 : vertices)
-            for (const auto v2 : vertices)
-                if (v1 < v2)
-                    edges.insert(std::make_tuple(v1, v2, adj_matrix[v1][v2]));
+        for (int v1 = 0; v1 < _max_vertex_idx - 1; ++v1)
+            for (int v2 = v1 + 1; v2 < _max_vertex_idx; ++v2)
+                edges.insert(std::make_tuple(v1, v2, adj_matrix[v1][v2]));
 
         int from, to;
         double weight;
-        std::map<int, int> power;
         for (const auto & edge : edges) {
             std::tie(from, to, weight) = edge;
-            int from_comp_idx = components.findSetByElem(from);
-            int   to_comp_idx = components.findSetByElem(to);
-            if (from_comp_idx == to_comp_idx) continue;
+            if (weight == 0.0) continue;
 
-            components.mergeSets(from_comp_idx, to_comp_idx);
-
-            span_tree.addEdge(from, to, static_cast<float>(weight));
-            ++power[from];
-            span_tree.addEdge(to, from, static_cast<float>(weight));
-            ++power[to];
+            if (set.find_set(from) != set.find_set(to)) {
+                _span_tree.addEdge(from, to, static_cast<float>(weight));
+                _span_tree.addEdge(to, from, static_cast<float>(weight));
+                set.union_(from, to);
+            }
         }
 
-        std::vector<int> leafs;
-        for (const auto & [v, pwr] : power)
-            if (pwr == 1) leafs.push_back(v);
-
-        std::map<int, int> max_distances;
-        for (const auto leaf : leafs) {
-            std::map<int, int> curr_distance;
-            span_tree.walkBreadthFirst(leaf, Increment(curr_distance));
-            for (const auto v : vertices)
-                max_distances[v] = std::max(max_distances[v], curr_distance[v]);
-        }
-
-        auto max_dist = std::max_element(max_distances.cbegin(), max_distances.cend(), [](const auto & p1, const auto & p2) {
-            return p1.second < p2.second; });
-
-        return max_dist->first;
+        // TODO: find centers
     }
 
 private:
-
-    std::set<int> bf_walk(int start_idx)
-    {
-        const auto num_of_vertices = static_cast<int>(adj_matrix.size());
-        auto found = std::set<int>();
-        auto queue = std::queue<int>();
-
-        found.insert(start_idx);
-        queue.push(start_idx);
-
-        int vertex;
-        while (not queue.empty()) {
-            vertex = queue.front();
-            for (int v : this->adj(vertex)) {
-                auto [it, havent_found_yet] = found.insert(v);
-                if (havent_found_yet)
-                    queue.push(v);
-            }
-            queue.pop();
-        }
-
-        return found;
-    }
-
-    std::vector<int> adj(int vertex)
-    {
-        const auto num_of_vertices = static_cast<int>(adj_matrix.size());
-        std::vector<int> adj;
-        for (int i = 0; i < num_of_vertices; ++i) {
-            if (adj_matrix[vertex][i] > 0.0)
-                adj.push_back(i);
-        }
-        return adj;
-    }
-
+    int _max_vertex_idx;
+    cv::detail::Graph _span_tree;
+    std::vector<std::set<int>> _components;
     std::vector<std::vector<double>> adj_matrix;
-    cv::detail::DisjointSets components;
 };
 
 
