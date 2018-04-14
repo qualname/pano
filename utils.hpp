@@ -32,6 +32,16 @@ struct UNION_WHERE {
         _vertices[to] = from;
     }
 
+    std::map<int, std::vector<int>> get_comps()
+    {
+        std::map<int, std::vector<int>> comps;
+        for (const auto & v : _vertices) {
+            auto parent = find_set(v.first);
+            comps[parent].push_back(v.first);
+        }
+        return comps;
+    }
+
 private:
     std::map<int, int> _vertices;
 };
@@ -49,8 +59,7 @@ struct CmpWeightDesc {
 class AdjacencyMatrix {
 public:
     AdjacencyMatrix(const std::vector<std::vector<cv::detail::MatchesInfo>> & matrix, double threshold)
-    : _max_vertex_idx(static_cast<int>(matrix.size())),
-      _span_tree(_max_vertex_idx)
+    : _max_vertex_idx(static_cast<int>(matrix.size()))
     {
         const auto num_of_vertices = static_cast<int>(matrix.size());
         adj_matrix.resize(num_of_vertices);
@@ -64,7 +73,7 @@ public:
         }
     }
 
-    void find_max_span_trees()
+    std::vector<int> find_max_span_trees(cv::detail::Graph & span_tree)
     {
         auto set = UNION_WHERE(_max_vertex_idx);
 
@@ -80,19 +89,24 @@ public:
             if (weight == 0.0) continue;
 
             if (set.find_set(from) != set.find_set(to)) {
-                _span_tree.addEdge(from, to, static_cast<float>(weight));
-                _span_tree.addEdge(to, from, static_cast<float>(weight));
+                span_tree.addEdge(from, to, static_cast<float>(weight));
+                span_tree.addEdge(to, from, static_cast<float>(weight));
                 set.union_(from, to);
             }
         }
 
-        // TODO: find centers
+        std::vector<int> centers;
+        _components = set.get_comps();
+        for (const auto & [root, vertices] : _components) {
+            // I _think_ "min(tree depth for v in vertices)" could work as center (??)
+        }
+
+        return centers;
     }
 
 private:
     int _max_vertex_idx;
-    cv::detail::Graph _span_tree;
-    std::vector<std::set<int>> _components;
+    std::map<int, std::vector<int>> _components;
     std::vector<std::vector<double>> adj_matrix;
 };
 
