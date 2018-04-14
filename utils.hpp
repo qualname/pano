@@ -7,6 +7,36 @@
 namespace utils {
 
 
+struct UNION_WHERE {
+    UNION_WHERE(int num_of_vertices)
+    {
+        for (int i = 0; i < num_of_vertices; ++i)
+            _vertices.emplace(i, -1);
+    }
+
+    int find_set(int vertex)
+    {
+        int parent = _vertices.at(vertex);
+
+        while (parent != -1) {
+            vertex = parent;
+            parent = _vertices.at(vertex);
+        }
+        return vertex;
+    }
+
+    void union_(int from, int to)
+    {
+        from = find_set(from);
+        to   = find_set(to);
+        _vertices[to] = from;
+    }
+
+private:
+    std::map<int, int> _vertices;
+};
+
+
 struct CmpWeightDesc {
     bool operator()(const std::tuple<int, int, double> & t1,
                     const std::tuple<int, int, double> & t2)
