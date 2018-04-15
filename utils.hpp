@@ -1,3 +1,5 @@
+#include <map>
+#include <set>
 #include <vector>
 
 #include "opencv2/stitching/detail/matchers.hpp"
@@ -56,6 +58,45 @@ struct CmpWeightDesc {
 };
 
 
+struct AccumulateOutEdges {
+    AccumulateOutEdges(int vertex, std::vector<cv::detail::GraphEdge> * edges)
+    : _vertex(vertex),
+      _edges(edges)
+    {}
+
+    void operator() (const cv::detail::GraphEdge & edge) {
+        if (edge.from == _vertex) _edges->push_back(edge);
+    }
+
+    int _vertex;
+    std::vector<cv::detail::GraphEdge> * _edges;
+};
+
+
+std::vector<cv::detail::GraphEdge> adjacent(int start, const cv::detail::Graph & span_tree)
+{
+    std::vector<cv::detail::GraphEdge> edges;
+    auto acc = AccumulateOutEdges(start, &edges);
+    span_tree.forEach(acc);
+    return edges;
+}
+
+
+int get_depth(int start, const cv::detail::Graph & span_tree, std::vector<bool> & discovered)
+{
+    int depth = 0;
+
+    discovered[start] = true;
+    for (const auto & edge : adjacent(start, span_tree)) {
+        if (not discovered[edge.to]) {
+            auto d = 1 + get_depth(edge.to, span_tree, discovered);
+            depth = std::max(depth, d);
+        }
+    }
+    return depth;
+}
+
+
 class AdjacencyMatrix {
 public:
     AdjacencyMatrix(const std::vector<std::vector<cv::detail::MatchesInfo>> & matrix, double threshold)
@@ -96,9 +137,20 @@ public:
         }
 
         std::vector<int> centers;
-        _components = set.get_comps();
+        _components = set.get_comps();        
         for (const auto & [root, vertices] : _components) {
-            // I _think_ "min(tree depth for v in vertices)" could work as center (??)
+            int curr_depth, min_depth = static_cast<int>(vertices.size());
+            int min_vertex;
+            for (int v : vertices) {
+                auto seen = std::vector<bool>(_max_vertex_idx, false);
+                curr_depth = get_depth(v, span_tree, seen);
+
+                if (curr_depth < min_depth) {
+                    min_depth = curr_depth;
+                    min_vertex = v;
+                }
+            }
+            centers.push_back(min_vertex);
         }
 
         return centers;
