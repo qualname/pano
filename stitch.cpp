@@ -182,6 +182,20 @@ int main(int argc, char * argv[])
     auto centers = graph.find_max_span_trees(spanning_tree);
 
     auto cameras = std::vector<std::vector<cv::detail::CameraParams>>();
-    for (const auto center : centers)
+    for (const auto center : centers) {
+        auto img_ids = utils::get_vertices_in_component(spanning_tree, center);
+        auto num_of_images_ = static_cast<int>(img_ids.size());
+
+        auto features_ = std::vector<cv::detail::ImageFeatures>();
+        auto matches_info_ = std::vector<std::vector<cv::detail::MatchesInfo>>();
+        auto spanning_tree_ = cv::detail::Graph();
+        int center_;
+        utils::leave_this_component(img_ids,
+            features_, features,
+            matches_info_, matches_info,
+            spanning_tree_, spanning_tree,
+            center_, center);
+
         cameras.push_back(camera_params::estimate(features, matches_info, spanning_tree, center));
+    }
 }

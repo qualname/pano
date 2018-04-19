@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <map>
 #include <set>
 #include <vector>
@@ -161,6 +162,81 @@ private:
     std::map<int, std::vector<int>> _components;
     std::vector<std::vector<double>> adj_matrix;
 };
+
+
+struct Acc {
+    Acc(std::vector<int> * vertices_, int v_)
+    : vertices(vertices_)
+    {
+        vertices->push_back(v_);
+    }
+
+    void operator() (const cv::detail::GraphEdge & edge) {
+        vertices->push_back(edge.to);
+    }
+
+    std::vector<int> * vertices;
+};
+
+
+std::vector<int> get_vertices_in_component(const cv::detail::Graph & span_tree, const int center)
+{
+    std::vector<int> vertices;
+    auto acc = Acc(&vertices, center);
+    span_tree.walkBreadthFirst(center, acc);
+    std::sort(vertices.begin(), vertices.end());
+    return vertices;
+}
+
+
+struct Copy {
+    Copy(cv::detail::Graph * g_, const std::vector<int> & ind_)
+    : g(g_)
+    {
+        for (int i = 0; i < static_cast<int>(ind_.size()); ++i)
+            map[ind_[i]] = i;
+    }
+
+    void operator() (const cv::detail::GraphEdge & edge) {
+        if (map.find(edge.from) != map.end())
+            g->addEdge(map[edge.from], map[edge.to], edge.weight);
+    }
+
+    cv::detail::Graph * g;
+    std::map<int, int> map;
+};
+
+void leave_this_component(const std::vector<int> & img_ids,
+    std::vector<cv::detail::ImageFeatures> & features_, const std::vector<cv::detail::ImageFeatures> & features,
+    std::vector<std::vector<cv::detail::MatchesInfo>> & matches_, const std::vector<std::vector<cv::detail::MatchesInfo>> & matches,
+    cv::detail::Graph & span_tree_, const cv::detail::Graph & span_tree,
+    int & center_, const int center)
+{
+    auto size = static_cast<int>(img_ids.size());
+    
+    matches_.resize(size);
+    for (int i = 0; i < size; ++i) {
+        int i_ = img_ids[i];
+
+        features_.push_back(features[i_]);
+        matches_[i].resize(size);
+        for (int j = 0; j < size; ++j) {
+            int j_ = img_ids[j];
+            matches_[i][j] = matches[i_][j_];
+        }
+    }
+
+    span_tree_.create(size);
+    Copy copy(&span_tree_, img_ids);
+    span_tree.forEach(copy);
+
+    for (int i = 0; i < size; ++i) {
+        if (img_ids[i] == center) {
+            center_ = i;
+            break;
+        }
+    }
+}
 
 
 } //namespace utils
