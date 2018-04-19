@@ -181,7 +181,6 @@ int main(int argc, char * argv[])
     auto graph = utils::AdjacencyMatrix(matches_info, 1.0);    
     auto centers = graph.find_max_span_trees(spanning_tree);
 
-    auto cameras = std::vector<std::vector<cv::detail::CameraParams>>();
     for (const auto center : centers) {
         auto img_ids = utils::get_vertices_in_component(spanning_tree, center);
         auto num_of_images_ = static_cast<int>(img_ids.size());
@@ -196,6 +195,6 @@ int main(int argc, char * argv[])
             spanning_tree_, spanning_tree,
             center_, center);
 
-        cameras.push_back(camera_params::estimate(features, matches_info, spanning_tree, center));
+        auto cameras = camera_params::estimate(features, matches_info, spanning_tree, center);
     }
 }
