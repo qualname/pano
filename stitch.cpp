@@ -13,6 +13,8 @@
 #include "ba.hpp"
 #include "camera.hpp"
 #include "utils.hpp"
+#include "warper.hpp"
+
 
 //double SCALE = 0.868757;  // TODO
 double SCALE = 1.0;
@@ -201,5 +203,7 @@ int main(int argc, char * argv[])
         // TODO: BA performance opt.
         auto adjuster = ba::BundleAdjuster(1.0);
         adjuster.adjust(features_, matches_info_, cameras);
+
+        auto radius = warper::get_radius(cameras);
     }
 }
