@@ -10,6 +10,7 @@
 #include "opencv2/xfeatures2d/nonfree.hpp"
 #include "opencv2/stitching/detail/matchers.hpp"
 
+#include "ba.hpp"
 #include "camera.hpp"
 #include "utils.hpp"
 
@@ -196,5 +197,9 @@ int main(int argc, char * argv[])
             center_, center);
 
         auto cameras = camera_params::estimate(features, matches_info, spanning_tree, center);
+
+        // TODO: BA performance opt.
+        auto adjuster = ba::BundleAdjuster(1.0);
+        adjuster.adjust(features_, matches_info_, cameras);
     }
 }
