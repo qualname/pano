@@ -31,10 +31,13 @@ void warp(const float radius,
 
     auto warper = cv::SphericalWarper().create(radius);
     for (int i = 0; i < num_of_imgs; ++i) {
+        cv::Mat_<float> K;
+        cams[i].K().convertTo(K, CV_32F);
+
         auto img = cv::imread(img_names[i]);
 
         cv::UMat mapx, mapy;
-        auto roi = warper->buildMaps(img.size(), cams[i].K(), cams[i].R, mapx, mapy);
+        auto roi = warper->buildMaps(img.size(), K, cams[i].R, mapx, mapy);
         warped[i].create(roi.height + 1, roi.width + 1, img.type());
         cv::remap(img, warped[i], mapx, mapy, cv::INTER_LINEAR, cv::BORDER_CONSTANT);
 
