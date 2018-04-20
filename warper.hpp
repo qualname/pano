@@ -1,31 +1,10 @@
 #include <cmath>
+#include <string>
 #include <vector>
 
 #include "opencv2/opencv.hpp"
 
 namespace warper {
-
-
-class SphericalMap {
-public:
-    SphericalMap(float s_) : s(s_) {} 
-
-    void map_coord(const h_point & p)
-    {
-        float x_ = s * std::atan2(p.x, p.z);
-        float y_ = s * std::atan2(p.y, std::hypot(p.x, p.z));
-    }
-
-    void inv_map_coord(const point & p_)
-    {
-        float x = std::tan(p_.x / s);
-        float y = std::tan(p_.y / s) / std::cos(p_.x / s);
-        float z = 1.f;
-    }
-
-private:
-    float s;
-};
 
 
 float get_radius(const std::vector<cv::detail::CameraParams> & cams)
@@ -38,6 +17,24 @@ float get_radius(const std::vector<cv::detail::CameraParams> & cams)
     std::sort(f.begin(), f.end());
 
     return static_cast<float>(f[num / 2]);
+}
+
+void warp(const float radius,
+          const std::vector<std::string> & img_names,
+          const std::vector<cv::detail::CameraParams> & cams)
+{
+    auto num_of_imgs = static_cast<int>(img_names.size());
+    std::vector<cv::UMat> warped(num_of_imgs);
+
+    auto warper = cv::SphericalWarper().create(radius);
+    for (int i = 0; i < num_of_imgs; ++i) {
+        auto img = cv::imread(img_names[i]);
+
+        cv::UMat mapx, mapy;
+        auto roi = warper->buildMaps(img.size(), cams[i].K(), cams[i].R, mapx, mapy);
+        warped[i].create(roi.height + 1, roi.width + 1, img.type());
+        cv::remap(img, warped[i], mapx, mapy, cv::INTER_LINEAR, cv::BORDER_CONSTANT);
+    }
 }
 
 
