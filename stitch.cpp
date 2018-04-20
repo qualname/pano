@@ -205,5 +205,12 @@ int main(int argc, char * argv[])
         adjuster.adjust(features_, matches_info_, cameras);
 
         auto radius = warper::get_radius(cameras);
+        auto names = std::vector<std::string>();
+        for (int id : img_ids)
+            names.push_back(img_names[id]);
+        
+        auto warped_imgs = std::vector<cv::UMat>(num_of_images_);
+        auto dest_rect = cv::Rect();
+        warper::warp(radius, names, cameras, warped_imgs, dest_rect);
     }
 }
