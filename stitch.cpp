@@ -198,7 +198,7 @@ int main(int argc, char * argv[])
             spanning_tree_, spanning_tree,
             center_, center);
 
-        auto cameras = camera_params::estimate(features, matches_info, spanning_tree, center);
+        auto cameras = camera_params::estimate(features_, matches_info_, spanning_tree_, center_);
 
         // TODO: BA performance opt.
         auto adjuster = ba::BundleAdjuster(1.0);
