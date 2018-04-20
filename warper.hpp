@@ -45,8 +45,6 @@ void warp(const float radius,
         img_sizes[i] = warped[i].size();
     }
     dest = cv::detail::resultRoi(topleft, img_sizes);
-
-    delete warper;
 }
 
 
