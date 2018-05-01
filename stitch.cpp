@@ -216,6 +216,11 @@ int main(int argc, char * argv[])
         auto dest_rect = cv::Rect();
         warper::warp(radius, names, cameras, warped_imgs, warped_masks, topleft_corners, dest_rect);
 
+        auto compensator = cv::detail::ExposureCompensator::createDefault(cv::detail::ExposureCompensator::GAIN_BLOCKS);
+        compensator->feed(topleft_corners, warped_imgs, warped_masks);
+        for (int i = 0; i < num_of_images; ++i)
+        	compensator->apply(i, topleft_corners[i], warped_imgs[i], warped_masks[i]);
+
         auto blender = cv::detail::MultiBandBlender(false, 3);
         blender.prepare(dest_rect);
         for (int i = 0; i < num_of_images_; ++i) {
