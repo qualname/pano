@@ -9,6 +9,7 @@
 #include "opencv2/core/mat.hpp"
 #include "opencv2/xfeatures2d/nonfree.hpp"
 #include "opencv2/stitching/detail/matchers.hpp"
+#include "opencv2/stitching/detail/blenders.hpp"
 
 #include "ba.hpp"
 #include "camera.hpp"
@@ -208,9 +209,22 @@ int main(int argc, char * argv[])
         auto names = std::vector<std::string>();
         for (int id : img_ids)
             names.push_back(img_names[id]);
-        
+
         auto warped_imgs = std::vector<cv::UMat>(num_of_images_);
+        auto warped_masks = std::vector<cv::UMat>(num_of_images_);
+        auto topleft_corners = std::vector<cv::Point>(num_of_images_);
         auto dest_rect = cv::Rect();
-        warper::warp(radius, names, cameras, warped_imgs, dest_rect);
+        warper::warp(radius, names, cameras, warped_imgs, warped_masks, topleft_corners, dest_rect);
+
+        auto blender = cv::detail::MultiBandBlender(false, 3);
+        blender.prepare(dest_rect);
+        for (int i = 0; i < num_of_images_; ++i) {
+            warped_imgs[i].convertTo(warped_imgs[i], CV_16S);
+            blender.feed(warped_imgs[i], warped_masks[i], topleft_corners[i]);
+        }
+
+        cv::Mat res, mask;
+        blender.blend(res, mask);
+        cv::imwrite(std::to_string(center) + ".png", res);
     }
 }

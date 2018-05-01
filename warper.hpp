@@ -23,11 +23,13 @@ void warp(const float radius,
           const std::vector<std::string>              & img_names,
           const std::vector<cv::detail::CameraParams> & cams,
                 std::vector<cv::UMat>                 & warped,
+                std::vector<cv::UMat>                 & masks,
+                std::vector<cv::Point>                & topleft,
                 cv::Rect                              & dest)
 {
     auto num_of_imgs = static_cast<int>(img_names.size());
-    auto topleft = std::vector<cv::Point>(num_of_imgs);
     auto img_sizes = std::vector<cv::Size>(num_of_imgs);
+    std::vector<cv::UMat> masks_(num_of_imgs);
 
     auto warper = cv::SphericalWarper().create(radius);
     for (int i = 0; i < num_of_imgs; ++i) {
@@ -43,6 +45,10 @@ void warp(const float radius,
 
         topleft[i] = roi.tl();
         img_sizes[i] = warped[i].size();
+
+        masks_[i].create(img.size(), CV_8U);
+        masks_[i].setTo(cv::Scalar::all(255));
+        warper->warp(masks_[i], K, cams[i].R, cv::INTER_NEAREST, cv::BORDER_CONSTANT, masks[i]);
     }
     dest = cv::detail::resultRoi(topleft, img_sizes);
 }
