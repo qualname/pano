@@ -221,7 +221,7 @@ int main(int argc, char * argv[])
         for (int i = 0; i < num_of_images; ++i)
         	compensator->apply(i, topleft_corners[i], warped_imgs[i], warped_masks[i]);
 
-        auto seam_finder = cv::detail::DpSeamFinder(cv::detail::DpSeamFinder::COLOR);
+        auto seam_finder = cv::detail::VoronoiSeamFinder();
         finder.find(warped_imgs, topleft_corners, warped_masks);
 
         auto blender = cv::detail::MultiBandBlender(false, 3);
