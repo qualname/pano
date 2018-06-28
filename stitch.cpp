@@ -213,8 +213,9 @@ int main(int argc, char * argv[])
         auto warped_imgs = std::vector<cv::UMat>(num_of_images_);
         auto warped_masks = std::vector<cv::UMat>(num_of_images_);
         auto topleft_corners = std::vector<cv::Point>(num_of_images_);
+        auto sizes = std::vector<cv::Size>(num_of_images_);
         auto dest_rect = cv::Rect();
-        warper::warp(radius, names, cameras, warped_imgs, warped_masks, topleft_corners, dest_rect);
+        warper::warp(radius, names, cameras, warped_imgs, warped_masks, topleft_corners, sizes, dest_rect);
 
         auto compensator = cv::detail::ExposureCompensator::createDefault(cv::detail::ExposureCompensator::GAIN_BLOCKS);
         compensator->feed(topleft_corners, warped_imgs, warped_masks);
@@ -224,11 +225,10 @@ int main(int argc, char * argv[])
         auto seam_finder = cv::detail::VoronoiSeamFinder();
         finder.find(warped_imgs, topleft_corners, warped_masks);
 
-// TODO: number of bands
-//     sqrt(resultRoi.area())
-//     log(log(area)) / log(2.)
+        auto area = cv::detail::resultRoi(topleft_corners, sizes).area();
+        auto num_of_bands = static_cast<int>(log(sqrt(area)) / log(2.));
 
-        auto blender = cv::detail::MultiBandBlender(false, 5);
+        auto blender = cv::detail::MultiBandBlender(false, num_of_bands);
         blender.prepare(dest_rect);
         for (int i = 0; i < num_of_images_; ++i) {
             warped_imgs[i].convertTo(warped_imgs[i], CV_16S);

@@ -25,6 +25,7 @@ void warp(const float radius,
                 std::vector<cv::UMat>                 & warped,
                 std::vector<cv::UMat>                 & masks,
                 std::vector<cv::Point>                & topleft,
+                std::vector<cv::Size>                 & sizes,
                 cv::Rect                              & dest)
 {
     auto num_of_imgs = static_cast<int>(img_names.size());
@@ -44,6 +45,7 @@ void warp(const float radius,
         cv::remap(img, warped[i], mapx, mapy, cv::INTER_LINEAR, cv::BORDER_CONSTANT);
 
         topleft[i] = roi.tl();
+        sizes[i] = roi.size();
         img_sizes[i] = warped[i].size();
 
         masks_[i].create(img.size(), CV_8U);
