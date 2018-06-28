@@ -224,7 +224,11 @@ int main(int argc, char * argv[])
         auto seam_finder = cv::detail::VoronoiSeamFinder();
         finder.find(warped_imgs, topleft_corners, warped_masks);
 
-        auto blender = cv::detail::MultiBandBlender(false, 3);
+// TODO: number of bands
+//     sqrt(resultRoi.area())
+//     log(log(area)) / log(2.)
+
+        auto blender = cv::detail::MultiBandBlender(false, 5);
         blender.prepare(dest_rect);
         for (int i = 0; i < num_of_images_; ++i) {
             warped_imgs[i].convertTo(warped_imgs[i], CV_16S);
