@@ -205,6 +205,13 @@ int main(int argc, char * argv[])
         auto adjuster = ba::BundleAdjuster(1.0);
         adjuster.adjust(features_, matches_info_, cameras);
 
+        std::vector<cv::Mat> r_matrices;
+        for (const auto & cam : cameras)
+            r_matrices.push_back(cam.R.clone());
+        cv::detail::waveCorrect(r_matrices, cv::detail::WAVE_CORRECT_HORIZ);
+        for (size_t i = 0; i < cameras.size(); ++i)
+            cameras[i].R = r_matrices[i];
+
         auto radius = warper::get_radius(cameras);
         auto names = std::vector<std::string>();
         for (int id : img_ids)
