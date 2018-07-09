@@ -168,7 +168,6 @@ int main(int argc, char * argv[])
     auto img_names = parse_args(argc, argv);
     auto num_of_images = static_cast<int>(img_names.size());
 
-    cv::Mat image;
     std::vector<cv::Mat>  images;
     std::vector<cv::Size> image_sizes;
     read_images(img_names, images, image_sizes);
