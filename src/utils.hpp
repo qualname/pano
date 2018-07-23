@@ -139,7 +139,10 @@ public:
 
         std::vector<int> centers;
         _components = set.get_comps();        
-        for (const auto & [root, vertices] : _components) {
+        // for (const auto & [root, vertices] : _components) {
+        for (const auto & comp : _components) {
+        	auto vertices = comp.second;
+
             int curr_depth, min_depth = static_cast<int>(vertices.size());
             int min_vertex;
             for (int v : vertices) {
