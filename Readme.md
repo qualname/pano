@@ -1,3 +1,8 @@
+# A repository elkoltozott!
+
+Tovabbiakban a frissitesek a `legokor` github organization alatti repo-ban lesznek elerhetoek.
+
+
 # Panorama keszito program
 
 A program rendezetlen kepek sorozatabol keszit panorama kep(ek)et.
